@@ -1,85 +1,85 @@
 #!/bin/bash
 
-# Test script for Unbound Exporter on Pi 4
+# Test script for Unbound Exporter
 
-echo "🔍 Testing Unbound Exporter Connection..."
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+echo "Testing Unbound Exporter Connection..."
 
 # Check if Unbound is running
-echo -e "\n${YELLOW}1. Checking Unbound service...${NC}"
+echo ""
+echo "1. Checking Unbound service..."
 if systemctl is-active --quiet unbound; then
-    echo -e "${GREEN}✅ Unbound is running${NC}"
+    echo "OK: Unbound is running"
 else
-    echo -e "${RED}❌ Unbound is not running${NC}"
+    echo "FAIL: Unbound is not running"
     echo "Start it with: sudo systemctl start unbound"
     exit 1
 fi
 
 # Check if socket exists
-echo -e "\n${YELLOW}2. Checking Unbound socket...${NC}"
+echo ""
+echo "2. Checking Unbound socket..."
 if [ -S /run/unbound.ctl ]; then
-    echo -e "${GREEN}✅ Socket exists at /run/unbound.ctl${NC}"
+    echo "OK: Socket exists at /run/unbound.ctl"
     ls -la /run/unbound.ctl
 else
-    echo -e "${RED}❌ Socket not found at /run/unbound.ctl${NC}"
+    echo "FAIL: Socket not found at /run/unbound.ctl"
     echo "Check your Unbound configuration for control-interface"
     exit 1
 fi
 
 # Build the exporter if needed
-echo -e "\n${YELLOW}3. Building exporter...${NC}"
+echo ""
+echo "3. Building exporter..."
 if [ ! -f "unbound-exporter" ]; then
     echo "Building Go binary..."
-    go build -o unbound-exporter exporter-go1.19.go
+    go build -o unbound-exporter exporter.go
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Build successful${NC}"
+        echo "OK: Build successful"
     else
-        echo -e "${RED}❌ Build failed${NC}"
+        echo "FAIL: Build failed"
         exit 1
     fi
 else
-    echo -e "${GREEN}✅ Binary already exists${NC}"
+    echo "OK: Binary already exists"
 fi
 
 # Test socket connection
-echo -e "\n${YELLOW}4. Testing socket connection...${NC}"
+echo ""
+echo "4. Testing socket connection..."
 timeout 5 ./unbound-exporter --socket-path=/run/unbound.ctl --log-level=debug &
 EXPORTER_PID=$!
 sleep 2
 
 # Check if process is running
 if kill -0 $EXPORTER_PID 2>/dev/null; then
-    echo -e "${GREEN}✅ Exporter started successfully${NC}"
-    
+    echo "OK: Exporter started successfully"
+
     # Test metrics endpoint
-    echo -e "\n${YELLOW}5. Testing metrics endpoint...${NC}"
+    echo ""
+    echo "5. Testing metrics endpoint..."
     sleep 1
     METRICS=$(curl -s http://127.0.0.1:9167/metrics | head -10)
     if [ $? -eq 0 ] && [ ! -z "$METRICS" ]; then
-        echo -e "${GREEN}✅ Metrics endpoint working${NC}"
+        echo "OK: Metrics endpoint working"
         echo "Sample metrics:"
         echo "$METRICS"
     else
-        echo -e "${RED}❌ Metrics endpoint failed${NC}"
+        echo "FAIL: Metrics endpoint failed"
     fi
-    
+
     # Clean up
     kill $EXPORTER_PID 2>/dev/null
 else
-    echo -e "${RED}❌ Exporter failed to start${NC}"
+    echo "FAIL: Exporter failed to start"
     echo "Check logs above for errors"
 fi
 
-echo -e "\n${YELLOW}6. Connection summary:${NC}"
-echo "If all tests passed, you can:"
-echo "1. Run: ./unbound-exporter --help"
-echo "2. Install service: sudo cp unbound-exporter /usr/local/bin/"
-echo "3. Configure Prometheus with prometheus.yml"
-echo "4. Import unbound-dashboard.json into Grafana"
+echo ""
+echo "6. Next steps:"
+echo "   ./unbound-exporter --help"
+echo "   sudo cp unbound-exporter /usr/local/bin/"
+echo "   sudo cp unbound-exporter.service /etc/systemd/system/"
+echo "   sudo systemctl enable --now unbound-exporter"
 
-echo -e "\n${GREEN}🎉 Test complete!${NC}"
+echo ""
+echo "Test complete."
