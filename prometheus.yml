@@ -1,0 +1,14 @@
+# Prometheus Config - Clean Version (No Loki/Alertmanager)
+
+global:
+  scrape_interval:     5m # Default 1min
+  evaluation_interval: 5m # Default 1min
+  scrape_timeout:      5s # Default 10s
+
+# Scrape configuration
+scrape_configs:
+  - job_name: unbound
+    scrape_interval: 5m
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ['YOUR_PI4_IP:9167']  # Replace with your Pi 4 IP address
