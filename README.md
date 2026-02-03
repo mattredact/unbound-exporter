@@ -9,6 +9,25 @@ Inspired by [ar51an/unbound-exporter](https://github.com/ar51an/unbound-exporter
 - Go 1.19+
 - Unbound with control socket enabled
 
+## Unbound Configuration
+
+Enable the control socket in `/etc/unbound/unbound.conf`:
+
+```
+remote-control:
+    control-enable: yes
+    control-interface: /run/unbound.ctl
+```
+
+Restart Unbound and verify the socket exists:
+
+```bash
+sudo systemctl restart unbound
+ls -la /run/unbound.ctl
+```
+
+The exporter user needs read access to the socket. Either run as the `unbound` user (recommended) or add your user to the `unbound` group.
+
 ## Build
 
 ```bash
