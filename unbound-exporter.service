@@ -1,0 +1,33 @@
+[Unit]
+Description=Secure Unbound Prometheus Exporter
+Documentation=https://github.com/prometheus/prometheus
+After=network.target unbound.service
+Requires=unbound.service
+
+[Service]
+Type=simple
+User=unbound
+Group=unbound
+ExecStart=/usr/local/bin/unbound-exporter \
+    --socket-path=/run/unbound.ctl \
+    --listen-address=0.0.0.0:9167 \
+    --log-level=info
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=on-failure
+RestartSec=5s
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
